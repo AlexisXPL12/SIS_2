@@ -7,7 +7,7 @@
              <div class="row">
                  <div class="col-md-6">
                      <div class="text-center text-lg-left">
-                         2025 © SIBI.
+                         2025 © SIS2.
                      </div>
                  </div>
                  <div class="col-md-6">

@@ -4,10 +4,7 @@
         <div class="card">
             <div class="card-body">
                 <div class="page-title-box d-flex align-items-center justify-content-between p-0">
-                    <h4 class="mb-0 font-size-18">Tokens API</h4>
-                    <div class="page-title-right">
-                        <button class="btn btn-primary waves-effect waves-light" onclick="generarNuevoToken()">+ Generar Token</button>
-                    </div>
+                    <h4 class="mb-0 font-size-18">Mis Tokens API</h4>
                 </div>
             </div>
         </div>

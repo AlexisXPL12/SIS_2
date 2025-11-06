@@ -19,7 +19,6 @@ async function listarTokens() {
                 <table class="table dt-responsive" width="100%">
                     <thead>
                         <tr>
-                            <th>ID</th>
                             <th>Token</th>
                             <th>Acciones</th>
                         </tr>
@@ -48,7 +47,6 @@ function generarFilaToken(item) {
     nueva_fila.id = "fila" + item.id;
     nueva_fila.className = "filas_tabla";
     nueva_fila.innerHTML = `
-        <td>${item.id}</td>
         <td>${item.token}</td>
         <td>
             <button class="btn btn-warning waves-effect waves-light" data-toggle="modal" data-target=".modal_editar${item.id}">
@@ -57,15 +55,15 @@ function generarFilaToken(item) {
         </td>
     `;
     document.querySelector('#contenido_tabla').appendChild(nueva_fila);
-
+    
     // Modal para editar token
     document.querySelector('#modals_editar').innerHTML += `
         <div class="modal fade modal_editar${item.id}" tabindex="-1" role="dialog" aria-hidden="true">
-            <div class="modal-dialog modal-lg">
+            <div class="modal-dialog modal-dialog-centered modal-lg">
                 <div class="modal-content">
-                    <div class="modal-header text-center">
-                        <h5 class="modal-title h4">Actualizar Token</h5>
-                        <button type="button" class="close waves-effect waves-light" data-dismiss="modal" aria-label="Close">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Actualizar Token</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                             <span aria-hidden="true">&times;</span>
                         </button>
                     </div>

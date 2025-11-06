@@ -469,6 +469,9 @@
         ::-webkit-scrollbar-thumb:hover {
             background: var(--gradient-secondary);
         }
+        .modal-editar{
+            padding-top: 200px !important;
+        }
     </style>
 </head>
 
