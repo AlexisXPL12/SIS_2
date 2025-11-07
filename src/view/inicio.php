@@ -44,6 +44,27 @@
             </div>
         </div>
     </div>
+    <div class="col-md-6 col-xl-3">
+        <div class="card dashboard-card">
+            <div class="card-body">
+                <div class="card-icon-wrapper">
+                    <div class="card-icon token-icon">
+                        <i class="mdi mdi-box"></i>
+                    </div>
+                </div>
+                <div class="card-content">
+                    <h5 class="card-title">Inventario</h5>
+                    <h2 class="card-number">1</h2>
+                    <p class="card-description">Bienes institucionales</p>
+                </div>
+                <div class="card-footer">
+                    <a href="<?php echo BASE_URL ?>api-request" class="btn btn-primary btn-block">
+                        <i class="mdi mdi-eye-outline"></i> Ver Detalles
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <div class="col-md-6 col-xl-3">
         <div class="card dashboard-card">
