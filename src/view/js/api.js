@@ -1,86 +1,177 @@
+// ===============================================
+// API.JS - Sistema Integral de Bienes Institucionales
+// ===============================================
+
+/**
+ * Función principal para llamar a la API y buscar bienes
+ */
 async function llamar_api() {
     const formulario = document.getElementById('frmApi');
     const datos = new FormData(formulario);
-    let ruta_api = document.getElementById('ruta_api').value;
+    const ruta_api = document.getElementById('ruta_api').value;
+    const contenidoDiv = document.getElementById('contenido');
+    const resultsSection = document.getElementById('results-section');
+    const resultsCount = document.getElementById('results-count');
+    const statsContainer = document.getElementById('stats-container');
+    const ultimaBusqueda = document.getElementById('ultima-busqueda');
+    const dataInput = document.getElementById('data');
+
+    // Validar que hay texto para buscar
+    if (!dataInput.value.trim()) {
+        alert('Por favor, ingrese un término de búsqueda');
+        return;
+    }
+
+    // Mostrar loading
+    mostrarLoading(contenidoDiv);
+    resultsSection.classList.add('active');
+
     try {
-        let respuesta = await fetch(ruta_api+'/src/control/ApiRequest.php?tipo=verBienApiByNombre', {
+        const respuesta = await fetch(ruta_api + '/src/control/ApiRequest.php?tipo=verBienApiByNombre', {
             method: 'POST',
             mode: 'cors',
             cache: 'no-cache',
             body: datos
         });
-        json = await respuesta.json();
-        let contenidosss = '';
-        let cont=0;
-        json.contenido.forEach(Element => {
-            cont++;
-            contenidosss+="<tr>";
-            contenidosss+="<td>"+cont+"</td>";
-            contenidosss+="<td>"+Element.codigo_patrimonial+"</td>";
-            contenidosss+="<td>"+Element.nombre_bien+"</td>";
-            contenidosss+="<td>"+Element.id_dependencia+"</td>";
-        });
-        document.getElementById('contenido').innerHTML = contenidosss;
-    } catch (error) {
-        console.log('Error:', error);
-    }
-}
-
-// Función para verificar el token con el servidor
-async function verificarToken(token) {
-    try {
-        const response = await fetch(base_url_server + 'src/control/Apibien.php?tipo=verificarToken', {
-            method: 'POST',
-            headers: {
-                'Authorization': token,
-                'Content-Type': 'application/x-www-form-urlencoded',
-            }
-        });
-
-        const result = await response.json();
-        const resultadosDiv = document.getElementById('resultados');
-
-        if (!result.status) {
-            localStorage.removeItem('apiToken');
-            window.location.href = base_url + 'autenticacion-api.php';
-            return;
+        
+        const json = await respuesta.json();
+        console.log('Respuesta de la API:', json); // Para debugging
+        
+        if (json.status && json.contenido && json.contenido.length > 0) {
+            // Mostrar resultados
+            mostrarResultados(json.contenido, contenidoDiv);
+            
+            // Actualizar contador
+            const total = json.contenido.length;
+            resultsCount.textContent = `${total} ${total === 1 ? 'resultado' : 'resultados'}`;
+            
+            // Actualizar estadísticas
+            actualizarEstadisticas(json.contenido, statsContainer, ultimaBusqueda, dataInput.value);
+            
+        } else {
+            mostrarSinResultados(contenidoDiv, dataInput.value);
+            resultsCount.textContent = '0 resultados';
         }
-
-        resultadosDiv.innerHTML = `
-            <div class="alert alert-success">
-                <i class="fas fa-check-circle fa-lg"></i>
-                <strong>Autenticación Exitosa</strong><br>
-                Token verificado correctamente. Puede realizar búsquedas de bienes.
-            </div>
-        `;
+        
     } catch (error) {
-        console.error('Error al verificar el token:', error);
-        document.getElementById('resultados').innerHTML = `
-            <div class="alert alert-danger">
-                <i class="fas fa-exclamation-triangle fa-lg"></i>
-                <strong>Error de Autenticación</strong><br>
-                ${error.message}
-            </div>
-        `;
+        console.error('Error completo:', error);
+        mostrarError(contenidoDiv, error.message);
     }
-    
-}
-// Función para obtener el color del estado
-function getEstadoClass(estado) {
-    const estadoLower = (estado || '').toLowerCase();
-    if (estadoLower.includes('bueno') || estadoLower.includes('operativo') || estadoLower.includes('excelente')) {
-        return 'estado-bueno';
-    } else if (estadoLower.includes('regular') || estadoLower.includes('mantenimiento')) {
-        return 'estado-regular';
-    } else if (estadoLower.includes('malo') || estadoLower.includes('inoperativo') || estadoLower.includes('deteriorado')) {
-        return 'estado-malo';
-    }
-    return 'estado-regular';
 }
 
-// Función para obtener el icono del bien
+/**
+ * Muestra el spinner de carga
+ */
+function mostrarLoading(contenedor) {
+    contenedor.innerHTML = `
+        <div style="grid-column: 1/-1;">
+            <div class="loading-spinner">
+                <div class="spinner"></div>
+                <p style="color: var(--text-secondary); margin: 0;">Buscando bienes...</p>
+            </div>
+        </div>
+    `;
+}
+
+/**
+ * Muestra los resultados en formato de cards
+ */
+function mostrarResultados(bienes, contenedor) {
+    let html = '';
+    
+    bienes.forEach((bien, index) => {
+        const numero = index + 1;
+        const icono = getIconoBien(bien.nombre_bien);
+        
+        html += `
+            <div class="bien-card fade-in" style="animation-delay: ${index * 0.05}s;">
+                <div class="bien-header">
+                    <div class="bien-numero">${numero}</div>
+                    <div class="bien-codigo">
+                        <i class="fas fa-barcode"></i> ${bien.codigo_patrimonial || 'N/A'}
+                    </div>
+                </div>
+                
+                <div class="bien-info">
+                    <div class="info-item">
+                        <div class="info-icon">
+                            <i class="${icono}"></i>
+                        </div>
+                        <div class="info-content">
+                            <div class="info-label">Denominación</div>
+                            <div class="info-value">${bien.nombre_bien || 'N/A'}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="info-item">
+                        <div class="info-icon">
+                            <i class="fas fa-map-marker-alt"></i>
+                        </div>
+                        <div class="info-content">
+                            <div class="info-label">Ambiente</div>
+                            <div class="info-value">${bien.nombre_ambiente || 'Sin asignar'}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    contenedor.innerHTML = html;
+}
+
+/**
+ * Muestra mensaje cuando no hay resultados
+ */
+function mostrarSinResultados(contenedor, termino) {
+    contenedor.innerHTML = `
+        <div style="grid-column: 1/-1;">
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i>
+                <div>
+                    <strong>No se encontraron resultados</strong><br>
+                    No hay bienes que coincidan con el término de búsqueda "${termino}".
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+/**
+ * Muestra mensaje de error
+ */
+function mostrarError(contenedor, mensaje) {
+    contenedor.innerHTML = `
+        <div style="grid-column: 1/-1;">
+            <div class="alert alert-danger">
+                <i class="fas fa-exclamation-triangle"></i>
+                <div>
+                    <strong>Error al realizar la búsqueda</strong><br>
+                    ${mensaje}
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+/**
+ * Actualiza las estadísticas en el panel superior
+ */
+function actualizarEstadisticas(bienes, statsContainer, ultimaBusquedaEl, termino) {
+    statsContainer.style.display = 'grid';
+    
+    const totalBienes = bienes.length;
+
+    document.getElementById('total-bienes').textContent = totalBienes;
+    ultimaBusquedaEl.textContent = termino;
+}
+
+/**
+ * Obtiene el icono apropiado según el tipo de bien
+ */
 function getIconoBien(nombreBien) {
     const nombre = (nombreBien || '').toLowerCase();
+    
     if (nombre.includes('computadora') || nombre.includes('laptop') || nombre.includes('pc')) {
         return 'fas fa-laptop';
     } else if (nombre.includes('impresora')) {
@@ -102,126 +193,79 @@ function getIconoBien(nombreBien) {
     } else if (nombre.includes('vehiculo') || nombre.includes('auto')) {
         return 'fas fa-car';
     }
+    
     return 'fas fa-box';
 }
 
-// Función para actualizar las estadísticas
-function actualizarEstadisticas(bienes) {
-    const statsContainer = document.getElementById('stats-container');
-    statsContainer.style.display = 'grid';
+/**
+ * Función para verificar el token con el servidor
+ */
+async function verificarToken(token) {
+    try {
+        const base_url_server = document.getElementById('ruta_api').value;
+        const response = await fetch(base_url_server + '/src/control/Apibien.php?tipo=verificarToken', {
+            method: 'POST',
+            headers: {
+                'Authorization': token,
+                'Content-Type': 'application/x-www-form-urlencoded',
+            }
+        });
 
-    const totalBienes = bienes.length;
-    let bienesBuenos = 0;
-    let bienesRegulares = 0;
-    let bienesMalos = 0;
+        const result = await response.json();
 
-    bienes.forEach(bien => {
-        const estado = (bien.estado_bien || '').toLowerCase();
-        if (estado.includes('bueno') || estado.includes('operativo') || estado.includes('excelente')) {
-            bienesBuenos++;
-        } else if (estado.includes('regular') || estado.includes('mantenimiento')) {
-            bienesRegulares++;
-        } else if (estado.includes('malo') || estado.includes('inoperativo') || estado.includes('deteriorado')) {
-            bienesMalos++;
-        } else {
-            bienesRegulares++;
+        if (!result.status) {
+            localStorage.removeItem('apiToken');
+            // Redirigir a autenticación si existe la página
+            if (typeof base_url !== 'undefined') {
+                window.location.href = base_url + 'autenticacion-api.php';
+            }
+            return false;
         }
-    });
 
-    document.getElementById('total-bienes').textContent = totalBienes;
-    document.getElementById('bienes-buenos').textContent = bienesBuenos;
-    document.getElementById('bienes-regulares').textContent = bienesRegulares;
+        return true;
+    } catch (error) {
+        console.error('Error al verificar el token:', error);
+        return false;
+    }
 }
 
-// Función para mostrar los resultados en cards
-function mostrarResultados(bienes) {
-    const resultadosDiv = document.getElementById('resultados');
-    const resultsCount = document.getElementById('results-count');
+/**
+ * Obtiene la clase CSS según el estado del bien
+ */
+function getEstadoClass(estado) {
+    const estadoLower = (estado || '').toLowerCase();
     
-    resultsCount.textContent = `${bienes.length} ${bienes.length === 1 ? 'resultado' : 'resultados'}`;
-    resultsCount.style.display = 'inline-block';
-
-    let html = '';
-
-    bienes.forEach((bien, index) => {
-        const estadoClass = getEstadoClass(bien.estado_bien);
-        const icono = getIconoBien(bien.nombre_bien);
-        
-        html += `
-            <div class="bien-card" style="animation-delay: ${index * 0.05}s;">
-                <div class="bien-header">
-                    <div class="bien-codigo">
-                        <i class="fas fa-barcode"></i> ${bien.codigo_patrimonial || 'N/A'}
-                    </div>
-                    <div class="bien-estado ${estadoClass}">
-                        ${bien.estado_bien || 'N/A'}
-                    </div>
-                </div>
-                
-                <div class="bien-info">
-                    <div class="info-item">
-                        <div class="info-icon">
-                            <i class="${icono}"></i>
-                        </div>
-                        <div class="info-content">
-                            <div class="info-label">NOMBRE DEL BIEN</div>
-                            <div class="info-value">${bien.nombre_bien || 'N/A'}</div>
-                        </div>
-                    </div>
-                    
-                    <div class="info-item">
-                        <div class="info-icon">
-                            <i class="fas fa-tag"></i>
-                        </div>
-                        <div class="info-content">
-                            <div class="info-label">MARCA</div>
-                            <div class="info-value">${bien.marca || 'N/A'}</div>
-                        </div>
-                    </div>
-                    
-                    <div class="info-item">
-                        <div class="info-icon">
-                            <i class="fas fa-cube"></i>
-                        </div>
-                        <div class="info-content">
-                            <div class="info-label">MODELO</div>
-                            <div class="info-value">${bien.modelo || 'N/A'}</div>
-                        </div>
-                    </div>
-                    
-                    <div class="info-item">
-                        <div class="info-icon">
-                            <i class="fas fa-map-marker-alt"></i>
-                        </div>
-                        <div class="info-content">
-                            <div class="info-label">UBICACIÓN</div>
-                            <div class="info-value">${bien.ubicacion_especifica || 'N/A'}</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-    });
-
-    resultadosDiv.innerHTML = html;
+    if (estadoLower.includes('bueno') || estadoLower.includes('operativo') || estadoLower.includes('excelente')) {
+        return 'estado-bueno';
+    } else if (estadoLower.includes('regular') || estadoLower.includes('mantenimiento')) {
+        return 'estado-regular';
+    } else if (estadoLower.includes('malo') || estadoLower.includes('inoperativo') || estadoLower.includes('deteriorado')) {
+        return 'estado-malo';
+    }
+    
+    return 'estado-regular';
 }
 
-// Asignar eventos
-document.getElementById('btn_buscar').addEventListener('click', llamar_api);
+// ===============================================
+// EVENT LISTENERS
+// ===============================================
 
-// Permitir búsqueda con Enter en todos los campos
-document.getElementById('prefijo').addEventListener('keypress', function(e) {
-    if (e.key === 'Enter') llamar_api();
-});
+// Esperar a que el DOM esté listo
+document.addEventListener('DOMContentLoaded', function() {
+    // Asignar evento al botón de búsqueda
+    const btnBuscar = document.getElementById('btn_buscar');
+    if (btnBuscar) {
+        btnBuscar.addEventListener('click', llamar_api);
+    }
 
-document.getElementById('numero').addEventListener('keypress', function(e) {
-    if (e.key === 'Enter') llamar_api();
-});
-
-document.getElementById('anio').addEventListener('keypress', function(e) {
-    if (e.key === 'Enter') llamar_api();
-});
-
-document.getElementById('nombre').addEventListener('keypress', function(e) {
-    if (e.key === 'Enter') llamar_api();
+    // Permitir búsqueda con Enter
+    const dataInput = document.getElementById('data');
+    if (dataInput) {
+        dataInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                llamar_api();
+            }
+        });
+    }
 });

@@ -1,17 +1,13 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>API de Bienes - SIBI</title>
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-    <script>
-        const base_url = '<?php echo BASE_URL; ?>';
-        const base_url_server = '<?php echo BASE_URL_SERVER; ?>';
-    </script>
     <style>
         /* Variables principales - Estilo Institucional SIBI */
         :root {
@@ -32,8 +28,14 @@
             --gradient-secondary: linear-gradient(135deg, #00897b 0%, #ffa726 100%);
         }
 
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
-            background: var(--bg-primary) !important;
+            background: var(--bg-primary);
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
             min-height: 100vh;
             padding: 20px 0;
@@ -66,12 +68,16 @@
             font-weight: 700;
             margin: 0;
             font-size: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
         }
 
         .page-header .subtitle {
             color: var(--text-secondary);
             margin: 0.5rem 0 0 0;
             font-weight: 500;
+            font-size: 1rem;
         }
 
         /* Estadísticas superiores */
@@ -191,34 +197,40 @@
             border-radius: 8px;
             padding: 0.75rem 1rem;
             transition: all 0.3s ease;
+            font-size: 1rem;
         }
 
         .form-control:focus {
             border-color: var(--accent-blue);
             box-shadow: 0 0 0 0.2rem rgba(30, 136, 229, 0.15);
-        }
-
-        .codigo-patrimonial-group {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: 10px;
+            outline: none;
         }
 
         /* Botones */
         .btn-primary {
-            background: var(--gradient-primary) !important;
-            border: none !important;
+            background: var(--gradient-primary);
+            border: none;
             border-radius: 8px;
             padding: 0.75rem 2rem;
             font-weight: 600;
             transition: all 0.3s ease;
             box-shadow: 0 4px 12px rgba(30, 136, 229, 0.2);
+            color: white;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
         }
 
         .btn-primary:hover {
-            background: var(--gradient-secondary) !important;
+            background: var(--gradient-secondary);
             transform: translateY(-2px);
             box-shadow: 0 6px 16px rgba(30, 136, 229, 0.3);
+            color: white;
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
         }
 
         /* Sección de resultados */
@@ -230,6 +242,11 @@
             box-shadow: var(--shadow);
             position: relative;
             overflow: hidden;
+            display: none;
+        }
+
+        .results-section.active {
+            display: block;
         }
 
         .results-section::before {
@@ -270,12 +287,18 @@
         }
 
         /* Cards de bienes */
+        .bienes-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 1.5rem;
+            margin-top: 1rem;
+        }
+
         .bien-card {
             background: var(--bg-card);
             border: 2px solid var(--border-color);
             border-radius: 12px;
             padding: 1.5rem;
-            margin-bottom: 1rem;
             transition: all 0.3s ease;
             position: relative;
             overflow: hidden;
@@ -294,7 +317,7 @@
         }
 
         .bien-card:hover {
-            transform: translateX(5px);
+            transform: translateY(-5px);
             box-shadow: var(--shadow-hover);
             border-color: var(--accent-blue);
         }
@@ -312,41 +335,35 @@
             border-bottom: 2px solid var(--border-color);
         }
 
+        .bien-numero {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            background: var(--gradient-primary);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+
         .bien-codigo {
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             font-weight: 700;
             color: var(--text-primary);
             background: var(--gradient-primary);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
-        }
-
-        .bien-estado {
-            padding: 0.4rem 1rem;
-            border-radius: 20px;
-            font-weight: 600;
-            font-size: 0.85rem;
-        }
-
-        .estado-bueno {
-            background: linear-gradient(135deg, #00897b 0%, #00695c 100%);
-            color: white;
-        }
-
-        .estado-regular {
-            background: linear-gradient(135deg, #ffa726 0%, #fb8c00 100%);
-            color: white;
-        }
-
-        .estado-malo {
-            background: linear-gradient(135deg, #e53935 0%, #c62828 100%);
-            color: white;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
         }
 
         .bien-info {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            display: flex;
+            flex-direction: column;
             gap: 1rem;
         }
 
@@ -366,6 +383,7 @@
             background: var(--bg-hover);
             color: var(--accent-blue);
             flex-shrink: 0;
+            font-size: 0.9rem;
         }
 
         .info-content {
@@ -377,11 +395,15 @@
             color: var(--text-secondary);
             font-weight: 600;
             margin-bottom: 0.25rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         .info-value {
             font-weight: 600;
             color: var(--text-primary);
+            font-size: 0.95rem;
+            word-break: break-word;
         }
 
         /* Alertas */
@@ -391,6 +413,10 @@
             padding: 1.25rem;
             box-shadow: var(--shadow);
             animation: slideIn 0.4s ease;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
         }
 
         @keyframes slideIn {
@@ -451,11 +477,7 @@
                 grid-template-columns: 1fr;
             }
 
-            .codigo-patrimonial-group {
-                grid-template-columns: 1fr;
-            }
-
-            .bien-info {
+            .bienes-grid {
                 grid-template-columns: 1fr;
             }
 
@@ -463,6 +485,10 @@
                 flex-direction: column;
                 gap: 1rem;
                 align-items: flex-start;
+            }
+
+            .page-header h1 {
+                font-size: 1.5rem;
             }
         }
 
@@ -478,7 +504,7 @@
             }
         }
 
-        .bien-card {
+        .fade-in {
             animation: fadeInUp 0.4s ease;
         }
     </style>
@@ -486,11 +512,33 @@
 
 <body>
     <input type="hidden" id="ruta_api" value="https://sibi.404brothers.com.pe">
+    
     <div class="container">
         <!-- Header Principal -->
         <div class="page-header">
-            <h1><i class="fas fa-database"></i> API de Bienes - SIBI</h1>
+            <h1>
+                <i class="fas fa-database"></i> 
+                API de Bienes - SIBI
+            </h1>
             <p class="subtitle">Sistema Integral de Bienes Institucionales</p>
+        </div>
+
+        <!-- Sección de Filtros -->
+        <div class="filter-section">
+            <h4><i class="fas fa-filter"></i> Criterios de Búsqueda</h4>
+            <form id="frmApi">
+                <input type="hidden" value="cffc7a66ee673b812e6d51b45d6dd2a0-20251023-1" name="token" id="token">
+                
+                <div class="mb-3">
+                    <label for="data" class="form-label">Buscar por Denominación</label>
+                    <input class="form-control" type="text" name="data" id="data" 
+                           placeholder="Ingrese el nombre del bien a buscar...">
+                </div>
+                
+                <button type="button" id="btn_buscar" class="btn btn-primary">
+                    <i class="fas fa-search"></i> Buscar Bienes
+                </button>
+            </form>
         </div>
 
         <!-- Estadísticas -->
@@ -504,47 +552,25 @@
             </div>
             <div class="stat-card">
                 <div class="stat-icon">
-                    <i class="fas fa-check-circle"></i>
-                </div>
-                <p class="stat-value" id="bienes-buenos">0</p>
-                <p class="stat-label">En Buen Estado</p>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon">
-                    <i class="fas fa-exclamation-triangle"></i>
-                </div>
-                <p class="stat-value" id="bienes-regulares">0</p>
-                <p class="stat-label">Estado Regular</p>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon">
                     <i class="fas fa-search"></i>
                 </div>
                 <p class="stat-value" id="ultima-busqueda">-</p>
                 <p class="stat-label">Última Búsqueda</p>
             </div>
         </div>
-    <form action="" id="frmApi">
-        <input type="text" value="cffc7a66ee673b812e6d51b45d6dd2a0-20251023-1" name="token" id="token">
-        <input type="text" name="data" id="data">
-        <br>
-    </form>
-    <button id="btn_buscar" onclick="llamar_api();">Buscar</button>
-    <br>
-    <table border="1" cellspacing="0" cellpadding="5">
-        <thead>
-            <tr>
-                <th>Nro</th>
-                <td>Codigo Patrimonial</td>
-                <td>Denominacion</td>
-                <td>Ambiente</td>
-            </tr>
-        </thead>
-        <tbody id="contenido">
-
-        </tbody>
-    </table>
+        
+        <!-- Sección de Resultados -->
+        <div class="results-section" id="results-section">
+            <div class="results-header">
+                <h4><i class="fas fa-list"></i> Resultados de la Búsqueda</h4>
+                <span class="results-count" id="results-count">0 resultados</span>
+            </div>
+            
+            <div class="bienes-grid" id="contenido">
+                <!-- Los resultados se cargarán aquí dinámicamente -->
+            </div>
+        </div>
+    </div>
 </body>
 <script src="<?php echo BASE_URL; ?>src/view/js/api.js"></script>
-
 </html>
