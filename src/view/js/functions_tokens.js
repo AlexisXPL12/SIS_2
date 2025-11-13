@@ -31,9 +31,6 @@ async function listarTokens() {
                                 <button class="btn btn-warning waves-effect waves-light" onclick="abrirModalEditar('${item.token}')">
                                     <i class="fa fa-edit"></i> Editar
                                 </button>
-                                <button class="btn btn-success waves-effect waves-light" onclick="generarNuevoToken()">
-                                    <i class="fa fa-sync"></i> Generar Nuevo
-                                </button>
                             </td>
                         </tr>
                     </tbody>
@@ -44,8 +41,8 @@ async function listarTokens() {
             document.getElementById('tablas').innerHTML = `
                 <div class="alert alert-info">
                     No hay token configurado. 
-                    <button class="btn btn-primary ml-2" onclick="generarNuevoToken()">
-                        <i class="fa fa-plus"></i> Generar Token
+                    <button class="btn btn-primary ml-2" onclick="crearPrimerToken()">
+                        <i class="fa fa-plus"></i> Crear Token
                     </button>
                 </div>
             `;
@@ -66,17 +63,30 @@ function abrirModalEditar(tokenActual) {
     Swal.fire({
         title: 'Actualizar Token API',
         html: `
-            <input type="text" id="swal-input-token" class="swal2-input" value="${tokenActual}" placeholder="Ingrese el nuevo token">
+            <div class="form-group text-left">
+                <label for="swal-input-token">Nuevo Token API:</label>
+                <input type="text" id="swal-input-token" class="form-control" value="${tokenActual}" placeholder="Ingrese el nuevo token">
+                <small class="form-text text-muted">El token debe tener al menos 10 caracteres</small>
+            </div>
         `,
         showCancelButton: true,
         confirmButtonText: 'Actualizar',
         cancelButtonText: 'Cancelar',
-        confirmButtonClass: 'btn btn-success',
-        cancelButtonClass: 'btn btn-light',
+        confirmButtonClass: 'btn btn-success mt-2',
+        cancelButtonClass: 'btn btn-secondary mt-2',
+        customClass: {
+            confirmButton: 'btn btn-success',
+            cancelButton: 'btn btn-secondary'
+        },
+        buttonsStyling: false,
         preConfirm: () => {
-            const nuevoToken = document.getElementById('swal-input-token').value;
+            const nuevoToken = document.getElementById('swal-input-token').value.trim();
             if (!nuevoToken) {
                 Swal.showValidationMessage('El token no puede estar vacío');
+                return false;
+            }
+            if (nuevoToken.length < 10) {
+                Swal.showValidationMessage('El token debe tener al menos 10 caracteres');
                 return false;
             }
             return nuevoToken;
@@ -100,6 +110,18 @@ async function actualizarToken(nuevoToken) {
         return;
     }
 
+    // Mostrar loading
+    Swal.fire({
+        title: 'Actualizando...',
+        text: 'Por favor espere',
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        showConfirmButton: false,
+        willOpen: () => {
+            Swal.showLoading();
+        }
+    });
+
     const formData = new FormData();
     formData.append('nuevo_token', nuevoToken);
     formData.append('sesion', session_session);
@@ -118,80 +140,71 @@ async function actualizarToken(nuevoToken) {
             Swal.fire({
                 icon: 'success',
                 title: 'Actualizado',
-                text: json.mensaje,
-                confirmButtonClass: 'btn btn-confirm mt-2'
+                text: json.mensaje || 'Token actualizado correctamente',
+                confirmButtonClass: 'btn btn-success mt-2'
+            }).then(() => {
+                listarTokens(); // Recargar la tabla
             });
-            listarTokens();
         } else {
             Swal.fire({
                 icon: 'error',
                 title: 'Error',
-                text: json.mensaje,
-                confirmButtonClass: 'btn btn-confirm mt-2'
+                text: json.mensaje || 'Error al actualizar el token',
+                confirmButtonClass: 'btn btn-danger mt-2'
             });
         }
     } catch (e) {
         console.log("Error al actualizar token: " + e);
         Swal.fire({
             icon: 'error',
-            title: 'Error',
-            text: 'Error al actualizar el token',
-            confirmButtonClass: 'btn btn-confirm mt-2'
+            title: 'Error de Conexión',
+            text: 'No se pudo conectar con el servidor. Intente nuevamente.',
+            confirmButtonClass: 'btn btn-danger mt-2'
         });
     }
 }
 
-// Función para generar un nuevo token
-async function generarNuevoToken() {
+// Función para crear el primer token (solo cuando no existe ninguno)
+function crearPrimerToken() {
     Swal.fire({
-        title: '¿Está seguro?',
-        text: "Se generará un nuevo token y reemplazará al actual",
-        icon: 'warning',
+        title: 'Crear Token API',
+        html: `
+            <div class="form-group text-left">
+                <label for="swal-input-token">Token API:</label>
+                <input type="text" id="swal-input-token" class="form-control" placeholder="Ingrese el token">
+                <small class="form-text text-muted">El token debe ser único y seguro (mínimo 10 caracteres)</small>
+            </div>
+        `,
         showCancelButton: true,
-        confirmButtonColor: '#3085d6',
-        cancelButtonColor: '#d33',
-        confirmButtonText: 'Sí, generar',
-        cancelButtonText: 'Cancelar'
-    }).then(async (result) => {
-        if (result.isConfirmed) {
-            const formData = new FormData();
-            formData.append('sesion', session_session);
-            formData.append('token', token_token);
-
-            try {
-                let respuesta = await fetch(base_url_server + 'src/control/Tokens.php?tipo=generar_token', {
-                    method: 'POST',
-                    mode: 'cors',
-                    cache: 'no-cache',
-                    body: formData
-                });
-                let json = await respuesta.json();
-
-                if (json.status) {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Token Generado',
-                        html: `<strong>Nuevo token:</strong><br><code>${json.token}</code>`,
-                        confirmButtonClass: 'btn btn-confirm mt-2'
-                    });
-                    listarTokens();
-                } else {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Error',
-                        text: json.mensaje || 'Error al generar el token',
-                        confirmButtonClass: 'btn btn-confirm mt-2'
-                    });
-                }
-            } catch (e) {
-                console.log("Error al generar token: " + e);
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: 'Error al generar el token',
-                    confirmButtonClass: 'btn btn-confirm mt-2'
-                });
+        confirmButtonText: 'Crear',
+        cancelButtonText: 'Cancelar',
+        confirmButtonClass: 'btn btn-primary mt-2',
+        cancelButtonClass: 'btn btn-secondary mt-2',
+        customClass: {
+            confirmButton: 'btn btn-primary',
+            cancelButton: 'btn btn-secondary'
+        },
+        buttonsStyling: false,
+        preConfirm: () => {
+            const token = document.getElementById('swal-input-token').value.trim();
+            if (!token) {
+                Swal.showValidationMessage('El token no puede estar vacío');
+                return false;
             }
+            if (token.length < 10) {
+                Swal.showValidationMessage('El token debe tener al menos 10 caracteres');
+                return false;
+            }
+            return token;
+        }
+    }).then((result) => {
+        if (result.isConfirmed) {
+            actualizarToken(result.value);
         }
     });
 }
+
+// Inicializar al cargar la página
+document.addEventListener('DOMContentLoaded', function() {
+    listarTokens();
+});

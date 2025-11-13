@@ -67,6 +67,10 @@ async function llamar_api() {
     mostrarLoading(contenidoDiv);
     resultsSection.classList.add('active');
 
+    // Debug: ver qué se está enviando
+    console.log('Token enviado:', datos.get('token'));
+    console.log('Data enviada:', datos.get('data'));
+
     try {
         const respuesta = await fetch(ruta_api + '/src/control/Api-Request.php?tipo=verBienApiByNombre', {
             method: 'POST',
@@ -93,7 +97,8 @@ async function llamar_api() {
             Swal.fire({
                 icon: 'error',
                 title: 'Error de Autenticación',
-                text: json.msg || 'Error al realizar la búsqueda',
+                html: `<p style="margin: 10px 0;">${json.msg || 'Error al realizar la búsqueda'}</p>
+                       <small style="color: #666;">Verifique que su token sea válido y esté activo.</small>`,
                 confirmButtonColor: '#1e88e5'
             });
             
