@@ -10,7 +10,6 @@
                 </div>
                 <div class="card-content">
                     <h5 class="card-title">Usuarios</h5>
-                    <h2 class="card-number">20</h2>
                     <p class="card-description">Gestión de usuarios del sistema</p>
                 </div>
                 <div class="card-footer">
@@ -32,8 +31,7 @@
                 </div>
                 <div class="card-content">
                     <h5 class="card-title">Token API</h5>
-                    <h2 class="card-number">1</h2>
-                    <p class="card-description">Tokens de autenticación activos</p>
+                    <p class="card-description">Token de autenticación</p>
                 </div>
                 <div class="card-footer">
                     <a href="<?php echo BASE_URL ?>tokens" class="btn btn-primary btn-block">
@@ -53,7 +51,6 @@
                 </div>
                 <div class="card-content">
                     <h5 class="card-title">Inventario</h5>
-                    <h2 class="card-number">1</h2>
                     <p class="card-description">Bienes institucionales</p>
                 </div>
                 <div class="card-footer">
@@ -75,8 +72,7 @@
                 </div>
                 <div class="card-content">
                     <h5 class="card-title">Docentes</h5>
-                    <h2 class="card-number">45</h2>
-                    <p class="card-description">Docentes registrados activos</p>
+                    <p class="card-description">Docentes registrados</p>
                 </div>
                 <div class="card-footer">
                     <a href="<?php echo BASE_URL ?>docentes" class="btn btn-primary btn-block">
@@ -97,7 +93,6 @@
                 </div>
                 <div class="card-content">
                     <h5 class="card-title">Reportes</h5>
-                    <h2 class="card-number">156</h2>
                     <p class="card-description">Reportes generados este mes</p>
                 </div>
                 <div class="card-footer">

@@ -527,8 +527,13 @@
 </head>
 
 <body>
+    <!-- Botón de Regreso -->
+        <div class="mb-3">
+            <a type="button" class="btn btn-primary" href="<?php echo BASE_URL ?>inicio">
+                <i class="fas fa-arrow-left"></i> Regresar a Inicio
+            </a>
+        </div>
     <input type="hidden" id="ruta_api" value="https://sibi.404brothers.com.pe">
-
     <div class="container">
         <!-- Header Principal -->
         <div class="page-header">
