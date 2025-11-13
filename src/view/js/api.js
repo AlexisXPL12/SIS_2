@@ -172,7 +172,7 @@ function mostrarResultados(bienes, contenedor) {
                         </div>
                         <div class="info-content">
                             <div class="info-label">Ambiente</div>
-                            <div class="info-value">${bien.nombre_ambiente || 'Sin asignar'}</div>
+                            <div class="info-value">${bien.nombre_dependencia || 'Sin asignar'}</div>
                         </div>
                     </div>
                 </div>

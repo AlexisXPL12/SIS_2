@@ -31,9 +31,6 @@ async function listarTokens() {
                                 <button class="btn btn-warning waves-effect waves-light" onclick="abrirModalEditar('${item.token}')">
                                     <i class="fa fa-edit"></i> Editar
                                 </button>
-                                <button class="btn btn-success waves-effect waves-light" onclick="generarNuevoToken()">
-                                    <i class="fa fa-sync"></i> Generar Nuevo
-                                </button>
                             </td>
                         </tr>
                     </tbody>
