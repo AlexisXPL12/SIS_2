@@ -51,13 +51,14 @@ async function llamar_api() {
     const statsContainer = document.getElementById('stats-container');
     const ultimaBusqueda = document.getElementById('ultima-busqueda');
     const dataInput = document.getElementById('data');
+    const codigoPatrimonialInput = document.getElementById('codigo_patrimonial');
 
-    // Validar que hay texto para buscar
-    if (!dataInput.value.trim()) {
+    // Validar que al menos un campo de búsqueda esté lleno
+    if (!dataInput.value.trim() && !codigoPatrimonialInput.value.trim()) {
         Swal.fire({
             icon: 'warning',
             title: 'Atención',
-            text: 'Por favor, ingrese un término de búsqueda',
+            text: 'Por favor, ingrese un término de búsqueda (nombre o código patrimonial)',
             confirmButtonColor: '#1e88e5'
         });
         return;
@@ -69,7 +70,8 @@ async function llamar_api() {
 
     // Debug: ver qué se está enviando
     console.log('Token enviado:', datos.get('token'));
-    console.log('Data enviada:', datos.get('data'));
+    console.log('Data (nombre) enviada:', datos.get('data'));
+    console.log('Código patrimonial enviado:', datos.get('codigo_patrimonial'));
 
     try {
         const respuesta = await fetch(ruta_api + '/src/control/Api-Request.php?tipo=verBienApiByNombre', {
@@ -78,7 +80,6 @@ async function llamar_api() {
             cache: 'no-cache',
             body: datos
         });
-
         const json = await respuesta.json();
         console.log('Respuesta de la API:', json);
 
@@ -87,9 +88,12 @@ async function llamar_api() {
                 mostrarResultados(json.contenido, contenidoDiv);
                 const total = json.contenido.length;
                 resultsCount.textContent = `${total} ${total === 1 ? 'resultado' : 'resultados'}`;
-                actualizarEstadisticas(json.contenido, statsContainer, ultimaBusqueda, dataInput.value);
+                // Actualizar estadísticas con el término de búsqueda usado
+                const terminoUsado = codigoPatrimonialInput.value.trim() || dataInput.value.trim();
+                actualizarEstadisticas(json.contenido, statsContainer, ultimaBusqueda, terminoUsado);
             } else {
-                mostrarSinResultados(contenidoDiv, dataInput.value);
+                const terminoUsado = codigoPatrimonialInput.value.trim() || dataInput.value.trim();
+                mostrarSinResultados(contenidoDiv, terminoUsado);
                 resultsCount.textContent = '0 resultados';
             }
         } else {
@@ -101,7 +105,7 @@ async function llamar_api() {
                        <small style="color: #666;">Verifique que su token sea válido y esté activo.</small>`,
                 confirmButtonColor: '#1e88e5'
             });
-            
+
             contenidoDiv.innerHTML = `
                 <div style="grid-column: 1/-1;">
                     <div class="alert alert-danger">
@@ -114,7 +118,6 @@ async function llamar_api() {
                 </div>
             `;
         }
-
     } catch (error) {
         console.error('Error completo:', error);
         Swal.fire({
@@ -126,6 +129,7 @@ async function llamar_api() {
         mostrarError(contenidoDiv, 'No se pudo conectar con el servidor');
     }
 }
+
 
 /**
  * Muestra el spinner de carga

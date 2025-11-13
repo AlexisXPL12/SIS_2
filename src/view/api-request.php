@@ -528,11 +528,11 @@
 
 <body>
     <!-- Botón de Regreso -->
-        <div class="mb-3">
-            <a type="button" class="btn btn-primary" href="<?php echo BASE_URL ?>inicio">
-                <i class="fas fa-arrow-left"></i> Regresar a Inicio
-            </a>
-        </div>
+    <div class="mb-3">
+        <a type="button" class="btn btn-primary" href="<?php echo BASE_URL ?>inicio">
+            <i class="fas fa-arrow-left"></i> Regresar a Inicio
+        </a>
+    </div>
     <input type="hidden" id="ruta_api" value="https://sibi.404brothers.com.pe">
     <div class="container">
         <!-- Header Principal -->
@@ -554,7 +554,11 @@
                     <input class="form-control" type="text" name="data" id="data"
                         placeholder="Ingrese el nombre del bien a buscar...">
                 </div>
+                <div class="mb-3">
+                    <label for="codigo_patrimonial" class="form-label">Buscar por Código Patrimonial</label>
+                    <input class="form-control" type="text" name="codigo_patrimonial" id="codigo_patrimonial" placeholder="Ingrese el código patrimonial del bien...">
 
+                </div>
                 <button type="button" id="btn_buscar" class="btn btn-primary">
                     <i class="fas fa-search"></i> Buscar Bienes
                 </button>
