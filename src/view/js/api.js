@@ -1,3 +1,39 @@
+async function obtenerToken() {
+    const datos = new FormData();
+    datos.append('sesion', session_session);
+    datos.append('token', token_token);
+    
+    try {
+        const respuesta = await fetch(base_url_server + 'src/control/Tokens.php?tipo=obtener_token', {
+            method: 'POST',
+            mode: 'cors',
+            cache: 'no-cache',
+            body: datos
+        });
+        const json = await respuesta.json();
+
+        if (json.status && json.token) {
+            document.getElementById('token').value = json.token;
+        } else {
+            console.error('Error: No se pudo obtener el token.');
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'Error al cargar el token de la API. Contacte al administrador.',
+                confirmButtonColor: '#1e88e5'
+            });
+        }
+    } catch (error) {
+        console.error('Error al obtener el token:', error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'Error al cargar el token de la API. Contacte al administrador.',
+            confirmButtonColor: '#1e88e5'
+        });
+    }
+}
+
 // ===============================================
 // API.JS - Sistema Integral de Bienes Institucionales
 // ===============================================
@@ -18,7 +54,12 @@ async function llamar_api() {
 
     // Validar que hay texto para buscar
     if (!dataInput.value.trim()) {
-        alert('Por favor, ingrese un término de búsqueda');
+        Swal.fire({
+            icon: 'warning',
+            title: 'Atención',
+            text: 'Por favor, ingrese un término de búsqueda',
+            confirmButtonColor: '#1e88e5'
+        });
         return;
     }
 
@@ -27,35 +68,57 @@ async function llamar_api() {
     resultsSection.classList.add('active');
 
     try {
-        const respuesta = await fetch(ruta_api + '/src/control/ApiRequest.php?tipo=verBienApiByNombre', {
+        const respuesta = await fetch(ruta_api + '/src/control/Api-Request.php?tipo=verBienApiByNombre', {
             method: 'POST',
             mode: 'cors',
             cache: 'no-cache',
             body: datos
         });
-        
+
         const json = await respuesta.json();
-        console.log('Respuesta de la API:', json); // Para debugging
-        
-        if (json.status && json.contenido && json.contenido.length > 0) {
-            // Mostrar resultados
-            mostrarResultados(json.contenido, contenidoDiv);
-            
-            // Actualizar contador
-            const total = json.contenido.length;
-            resultsCount.textContent = `${total} ${total === 1 ? 'resultado' : 'resultados'}`;
-            
-            // Actualizar estadísticas
-            actualizarEstadisticas(json.contenido, statsContainer, ultimaBusqueda, dataInput.value);
-            
+        console.log('Respuesta de la API:', json);
+
+        if (json.status) {
+            if (json.contenido && json.contenido.length > 0) {
+                mostrarResultados(json.contenido, contenidoDiv);
+                const total = json.contenido.length;
+                resultsCount.textContent = `${total} ${total === 1 ? 'resultado' : 'resultados'}`;
+                actualizarEstadisticas(json.contenido, statsContainer, ultimaBusqueda, dataInput.value);
+            } else {
+                mostrarSinResultados(contenidoDiv, dataInput.value);
+                resultsCount.textContent = '0 resultados';
+            }
         } else {
-            mostrarSinResultados(contenidoDiv, dataInput.value);
-            resultsCount.textContent = '0 resultados';
+            // Mostrar el mensaje de error específico del servidor
+            Swal.fire({
+                icon: 'error',
+                title: 'Error de Autenticación',
+                text: json.msg || 'Error al realizar la búsqueda',
+                confirmButtonColor: '#1e88e5'
+            });
+            
+            contenidoDiv.innerHTML = `
+                <div style="grid-column: 1/-1;">
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <div>
+                            <strong>Error</strong><br>
+                            ${json.msg || 'Error al realizar la búsqueda'}
+                        </div>
+                    </div>
+                </div>
+            `;
         }
-        
+
     } catch (error) {
         console.error('Error completo:', error);
-        mostrarError(contenidoDiv, error.message);
+        Swal.fire({
+            icon: 'error',
+            title: 'Error de Conexión',
+            text: 'No se pudo conectar con el servidor. Verifique su conexión a internet.',
+            confirmButtonColor: '#1e88e5'
+        });
+        mostrarError(contenidoDiv, 'No se pudo conectar con el servidor');
     }
 }
 
@@ -78,11 +141,11 @@ function mostrarLoading(contenedor) {
  */
 function mostrarResultados(bienes, contenedor) {
     let html = '';
-    
+
     bienes.forEach((bien, index) => {
         const numero = index + 1;
         const icono = getIconoBien(bien.nombre_bien);
-        
+
         html += `
             <div class="bien-card fade-in" style="animation-delay: ${index * 0.05}s;">
                 <div class="bien-header">
@@ -116,7 +179,7 @@ function mostrarResultados(bienes, contenedor) {
             </div>
         `;
     });
-    
+
     contenedor.innerHTML = html;
 }
 
@@ -159,9 +222,7 @@ function mostrarError(contenedor, mensaje) {
  */
 function actualizarEstadisticas(bienes, statsContainer, ultimaBusquedaEl, termino) {
     statsContainer.style.display = 'grid';
-    
     const totalBienes = bienes.length;
-
     document.getElementById('total-bienes').textContent = totalBienes;
     ultimaBusquedaEl.textContent = termino;
 }
@@ -171,7 +232,7 @@ function actualizarEstadisticas(bienes, statsContainer, ultimaBusquedaEl, termin
  */
 function getIconoBien(nombreBien) {
     const nombre = (nombreBien || '').toLowerCase();
-    
+
     if (nombre.includes('computadora') || nombre.includes('laptop') || nombre.includes('pc')) {
         return 'fas fa-laptop';
     } else if (nombre.includes('impresora')) {
@@ -193,7 +254,7 @@ function getIconoBien(nombreBien) {
     } else if (nombre.includes('vehiculo') || nombre.includes('auto')) {
         return 'fas fa-car';
     }
-    
+
     return 'fas fa-box';
 }
 
@@ -215,7 +276,6 @@ async function verificarToken(token) {
 
         if (!result.status) {
             localStorage.removeItem('apiToken');
-            // Redirigir a autenticación si existe la página
             if (typeof base_url !== 'undefined') {
                 window.location.href = base_url + 'autenticacion-api.php';
             }
@@ -234,7 +294,7 @@ async function verificarToken(token) {
  */
 function getEstadoClass(estado) {
     const estadoLower = (estado || '').toLowerCase();
-    
+
     if (estadoLower.includes('bueno') || estadoLower.includes('operativo') || estadoLower.includes('excelente')) {
         return 'estado-bueno';
     } else if (estadoLower.includes('regular') || estadoLower.includes('mantenimiento')) {
@@ -242,7 +302,7 @@ function getEstadoClass(estado) {
     } else if (estadoLower.includes('malo') || estadoLower.includes('inoperativo') || estadoLower.includes('deteriorado')) {
         return 'estado-malo';
     }
-    
+
     return 'estado-regular';
 }
 
@@ -250,18 +310,15 @@ function getEstadoClass(estado) {
 // EVENT LISTENERS
 // ===============================================
 
-// Esperar a que el DOM esté listo
-document.addEventListener('DOMContentLoaded', function() {
-    // Asignar evento al botón de búsqueda
+document.addEventListener('DOMContentLoaded', function () {
     const btnBuscar = document.getElementById('btn_buscar');
     if (btnBuscar) {
         btnBuscar.addEventListener('click', llamar_api);
     }
 
-    // Permitir búsqueda con Enter
     const dataInput = document.getElementById('data');
     if (dataInput) {
-        dataInput.addEventListener('keypress', function(e) {
+        dataInput.addEventListener('keypress', function (e) {
             if (e.key === 'Enter') {
                 e.preventDefault();
                 llamar_api();

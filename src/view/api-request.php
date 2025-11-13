@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,6 +9,14 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        const base_url = '<?php echo BASE_URL; ?>';
+        const base_url_server = '<?php echo BASE_URL_SERVER; ?>';
+        const session_usuario = '<?php echo $_SESSION["sesion_usuario"]; ?>';
+        const session_session = '<?php echo $_SESSION['sesion_id']; ?>';
+        const token_token = '<?php echo $_SESSION['sesion_token']; ?>';
+    </script>
     <style>
         /* Variables principales - Estilo Institucional SIBI */
         :root {
@@ -424,6 +433,7 @@
                 opacity: 0;
                 transform: translateY(-20px);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0);
@@ -467,8 +477,13 @@
         }
 
         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
         }
 
         /* Responsive */
@@ -498,6 +513,7 @@
                 opacity: 0;
                 transform: translateY(20px);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0);
@@ -512,12 +528,12 @@
 
 <body>
     <input type="hidden" id="ruta_api" value="https://sibi.404brothers.com.pe">
-    
+
     <div class="container">
         <!-- Header Principal -->
         <div class="page-header">
             <h1>
-                <i class="fas fa-database"></i> 
+                <i class="fas fa-database"></i>
                 API de Bienes - SIBI
             </h1>
             <p class="subtitle">Sistema Integral de Bienes Institucionales</p>
@@ -527,14 +543,13 @@
         <div class="filter-section">
             <h4><i class="fas fa-filter"></i> Criterios de Búsqueda</h4>
             <form id="frmApi">
-                <input type="hidden" value="cffc7a66ee673b812e6d51b45d6dd2a0-20251023-1" name="token" id="token">
-                
+                <input type="hidden" value="" name="token" id="token">
                 <div class="mb-3">
                     <label for="data" class="form-label">Buscar por Denominación</label>
-                    <input class="form-control" type="text" name="data" id="data" 
-                           placeholder="Ingrese el nombre del bien a buscar...">
+                    <input class="form-control" type="text" name="data" id="data"
+                        placeholder="Ingrese el nombre del bien a buscar...">
                 </div>
-                
+
                 <button type="button" id="btn_buscar" class="btn btn-primary">
                     <i class="fas fa-search"></i> Buscar Bienes
                 </button>
@@ -558,14 +573,14 @@
                 <p class="stat-label">Última Búsqueda</p>
             </div>
         </div>
-        
+
         <!-- Sección de Resultados -->
         <div class="results-section" id="results-section">
             <div class="results-header">
                 <h4><i class="fas fa-list"></i> Resultados de la Búsqueda</h4>
                 <span class="results-count" id="results-count">0 resultados</span>
             </div>
-            
+
             <div class="bienes-grid" id="contenido">
                 <!-- Los resultados se cargarán aquí dinámicamente -->
             </div>
@@ -573,4 +588,9 @@
     </div>
 </body>
 <script src="<?php echo BASE_URL; ?>src/view/js/api.js"></script>
+<script>
+    // Llamar a la función para cargar el token
+    obtenerToken();
+</script>
+
 </html>

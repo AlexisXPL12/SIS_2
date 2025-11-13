@@ -11,41 +11,64 @@ class TokenModel
         $this->conexion = $this->conexion->connect();
     }
 
-    // Listar todos los tokens
+    // Obtener el token de la API
+    public function obtenerTokenAPI()
+    {
+        $sql = $this->conexion->query("SELECT token FROM tokens_api LIMIT 1");
+        if ($sql && $sql->num_rows > 0) {
+            $token = $sql->fetch_object();
+            return $token->token ?? '';
+        }
+        return '';
+    }
+
+    // Listar el token (solo hay uno)
     public function listarTodosLosTokens()
     {
         $arrRespuesta = array();
-        $query = "SELECT * FROM tokens_api ORDER BY id ASC";
+        $query = "SELECT token FROM tokens_api LIMIT 1";
         $respuesta = $this->conexion->query($query);
-        while ($objeto = $respuesta->fetch_object()) {
+        if ($objeto = $respuesta->fetch_object()) {
             array_push($arrRespuesta, $objeto);
         }
         return $arrRespuesta;
     }
 
-    // Obtener un token por ID
-    public function obtenerTokenPorId($id)
+    // Actualizar el token único
+    public function actualizarToken($nuevoToken)
     {
-        $query = "SELECT * FROM tokens_api WHERE id = '$id'";
-        $respuesta = $this->conexion->query($query);
-        return $respuesta->fetch_object();
-    }
-
-    // Actualizar un token
-    public function actualizarToken($id, $nuevoToken)
-    {
-        $query = "UPDATE tokens_api SET token = '$nuevoToken' WHERE id = '$id'";
+        // Primero verificamos si existe un token
+        $verificar = $this->conexion->query("SELECT token FROM tokens_api LIMIT 1");
+        
+        if ($verificar->num_rows > 0) {
+            // Si existe, actualizamos
+            $query = "UPDATE tokens_api SET token = '$nuevoToken' LIMIT 1";
+        } else {
+            // Si no existe, insertamos
+            $query = "INSERT INTO tokens_api (token) VALUES ('$nuevoToken')";
+        }
+        
         $respuesta = $this->conexion->query($query);
         return $respuesta;
     }
 
-    // Generar un nuevo token (opcional)
+    // Generar un nuevo token
     public function generarNuevoToken()
     {
-        $nuevoToken = bin2hex(random_bytes(16)); // Genera un token aleatorio de 32 caracteres
-        $query = "INSERT INTO tokens_api (token) VALUES ('$nuevoToken')";
+        $nuevoToken = bin2hex(random_bytes(16)) . '-' . date('Ymd') . '-1';
+        
+        // Verificar si existe un token
+        $verificar = $this->conexion->query("SELECT token FROM tokens_api LIMIT 1");
+        
+        if ($verificar->num_rows > 0) {
+            // Actualizar token existente
+            $query = "UPDATE tokens_api SET token = '$nuevoToken' LIMIT 1";
+        } else {
+            // Insertar nuevo token
+            $query = "INSERT INTO tokens_api (token) VALUES ('$nuevoToken')";
+        }
+        
         $this->conexion->query($query);
         return $nuevoToken;
     }
 }
-?>

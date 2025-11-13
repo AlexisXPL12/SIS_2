@@ -1,4 +1,5 @@
-// Función para listar todos los tokens
+
+// Función para listar el token
 async function listarTokens() {
     try {
         const formData = new FormData();
@@ -13,100 +14,93 @@ async function listarTokens() {
         });
         let json = await respuesta.json();
 
-        if (json.status) {
-            let datos = json.contenido;
+        if (json.status && json.contenido.length > 0) {
+            let item = json.contenido[0];
             let tabla = `
                 <table class="table dt-responsive" width="100%">
                     <thead>
                         <tr>
-                            <th>Token</th>
+                            <th>Token API</th>
                             <th>Acciones</th>
                         </tr>
                     </thead>
                     <tbody id="contenido_tabla">
+                        <tr class="filas_tabla">
+                            <td>${item.token}</td>
+                            <td>
+                                <button class="btn btn-warning waves-effect waves-light" onclick="abrirModalEditar('${item.token}')">
+                                    <i class="fa fa-edit"></i> Editar
+                                </button>
+                                <button class="btn btn-success waves-effect waves-light" onclick="generarNuevoToken()">
+                                    <i class="fa fa-sync"></i> Generar Nuevo
+                                </button>
+                            </td>
+                        </tr>
                     </tbody>
                 </table>
             `;
             document.getElementById('tablas').innerHTML = tabla;
-            document.querySelector('#modals_editar').innerHTML = '';
-
-            datos.forEach(item => {
-                generarFilaToken(item);
-            });
         } else {
-            document.getElementById('tablas').innerHTML = 'No se encontraron tokens';
+            document.getElementById('tablas').innerHTML = `
+                <div class="alert alert-info">
+                    No hay token configurado. 
+                    <button class="btn btn-primary ml-2" onclick="generarNuevoToken()">
+                        <i class="fa fa-plus"></i> Generar Token
+                    </button>
+                </div>
+            `;
         }
     } catch (e) {
         console.log("Error al cargar tokens: " + e);
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'Error al cargar el token',
+            confirmButtonClass: 'btn btn-confirm mt-2'
+        });
     }
 }
 
-// Función para generar una fila en la tabla
-function generarFilaToken(item) {
-    let nueva_fila = document.createElement("tr");
-    nueva_fila.id = "fila" + item.id;
-    nueva_fila.className = "filas_tabla";
-    nueva_fila.innerHTML = `
-        <td>${item.token}</td>
-        <td>
-            <button class="btn btn-warning waves-effect waves-light" data-toggle="modal" data-target=".modal_editar${item.id}">
-                <i class="fa fa-edit"></i>
-            </button>
-        </td>
-    `;
-    document.querySelector('#contenido_tabla').appendChild(nueva_fila);
-    
-    // Modal para editar token
-    document.querySelector('#modals_editar').innerHTML += `
-        <div class="modal fade modal_editar${item.id}" tabindex="-1" role="dialog" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered modal-lg">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">Actualizar Token</h5>
-                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                            <span aria-hidden="true">&times;</span>
-                        </button>
-                    </div>
-                    <div class="modal-body">
-                        <div class="col-12">
-                            <form class="form-horizontal" id="frmActualizar${item.id}">
-                                <div class="form-group row mb-2">
-                                    <label for="token${item.id}" class="col-3 col-form-label">Token</label>
-                                    <div class="col-9">
-                                        <input type="text" class="form-control" id="token${item.id}" name="token" value="${item.token}">
-                                    </div>
-                                </div>
-                                <div class="form-group mb-0 justify-content-end row text-center">
-                                    <div class="col-12">
-                                        <button type="button" class="btn btn-light waves-effect waves-light" data-dismiss="modal">Cancelar</button>
-                                        <button type="button" class="btn btn-success waves-effect waves-light" onclick="actualizarToken(${item.id})">Actualizar</button>
-                                    </div>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
+// Función para abrir modal de edición
+function abrirModalEditar(tokenActual) {
+    Swal.fire({
+        title: 'Actualizar Token API',
+        html: `
+            <input type="text" id="swal-input-token" class="swal2-input" value="${tokenActual}" placeholder="Ingrese el nuevo token">
+        `,
+        showCancelButton: true,
+        confirmButtonText: 'Actualizar',
+        cancelButtonText: 'Cancelar',
+        confirmButtonClass: 'btn btn-success',
+        cancelButtonClass: 'btn btn-light',
+        preConfirm: () => {
+            const nuevoToken = document.getElementById('swal-input-token').value;
+            if (!nuevoToken) {
+                Swal.showValidationMessage('El token no puede estar vacío');
+                return false;
+            }
+            return nuevoToken;
+        }
+    }).then((result) => {
+        if (result.isConfirmed) {
+            actualizarToken(result.value);
+        }
+    });
 }
 
-// Función para actualizar un token
-async function actualizarToken(id) {
-    let nuevoToken = document.getElementById('token' + id).value;
+// Función para actualizar el token
+async function actualizarToken(nuevoToken) {
     if (!nuevoToken) {
         Swal.fire({
-            type: 'error',
+            icon: 'error',
             title: 'Error',
             text: 'El token no puede estar vacío',
-            confirmButtonClass: 'btn btn-confirm mt-2',
-            footer: ''
+            confirmButtonClass: 'btn btn-confirm mt-2'
         });
         return;
     }
 
     const formData = new FormData();
-    formData.append('id', id);
     formData.append('nuevo_token', nuevoToken);
     formData.append('sesion', session_session);
     formData.append('token', token_token);
@@ -122,54 +116,82 @@ async function actualizarToken(id) {
 
         if (json.status) {
             Swal.fire({
-                type: 'success',
+                icon: 'success',
                 title: 'Actualizado',
                 text: json.mensaje,
-                confirmButtonClass: 'btn btn-confirm mt-2',
-                footer: ''
+                confirmButtonClass: 'btn btn-confirm mt-2'
             });
-            $('.modal_editar' + id).modal('hide');
-            listarTokens(); // Refrescar la tabla
+            listarTokens();
         } else {
             Swal.fire({
-                type: 'error',
+                icon: 'error',
                 title: 'Error',
                 text: json.mensaje,
-                confirmButtonClass: 'btn btn-confirm mt-2',
-                footer: ''
+                confirmButtonClass: 'btn btn-confirm mt-2'
             });
         }
     } catch (e) {
         console.log("Error al actualizar token: " + e);
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'Error al actualizar el token',
+            confirmButtonClass: 'btn btn-confirm mt-2'
+        });
     }
 }
 
 // Función para generar un nuevo token
 async function generarNuevoToken() {
-    const formData = new FormData();
-    formData.append('sesion', session_session);
-    formData.append('token', token_token);
+    Swal.fire({
+        title: '¿Está seguro?',
+        text: "Se generará un nuevo token y reemplazará al actual",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Sí, generar',
+        cancelButtonText: 'Cancelar'
+    }).then(async (result) => {
+        if (result.isConfirmed) {
+            const formData = new FormData();
+            formData.append('sesion', session_session);
+            formData.append('token', token_token);
 
-    try {
-        let respuesta = await fetch(base_url_server + 'src/control/Tokens.php?tipo=generar_token', {
-            method: 'POST',
-            mode: 'cors',
-            cache: 'no-cache',
-            body: formData
-        });
-        let json = await respuesta.json();
+            try {
+                let respuesta = await fetch(base_url_server + 'src/control/Tokens.php?tipo=generar_token', {
+                    method: 'POST',
+                    mode: 'cors',
+                    cache: 'no-cache',
+                    body: formData
+                });
+                let json = await respuesta.json();
 
-        if (json.status) {
-            Swal.fire({
-                type: 'success',
-                title: 'Generado',
-                text: 'Nuevo token generado: ' + json.token,
-                confirmButtonClass: 'btn btn-confirm mt-2',
-                footer: ''
-            });
-            listarTokens(); // Refrescar la tabla
+                if (json.status) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Token Generado',
+                        html: `<strong>Nuevo token:</strong><br><code>${json.token}</code>`,
+                        confirmButtonClass: 'btn btn-confirm mt-2'
+                    });
+                    listarTokens();
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: json.mensaje || 'Error al generar el token',
+                        confirmButtonClass: 'btn btn-confirm mt-2'
+                    });
+                }
+            } catch (e) {
+                console.log("Error al generar token: " + e);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Error al generar el token',
+                    confirmButtonClass: 'btn btn-confirm mt-2'
+                });
+            }
         }
-    } catch (e) {
-        console.log("Error al generar token: " + e);
-    }
+    });
 }

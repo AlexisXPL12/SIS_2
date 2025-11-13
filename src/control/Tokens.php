@@ -27,6 +27,12 @@ $token = $_REQUEST['token'];
 // CONTROLADOR TOKEN API
 // ===============================================
 
+if ($tipo == 'obtener_token') {
+    $token = $objToken->obtenerTokenAPI();
+    echo json_encode(['status' => true, 'token' => $token]);
+    exit;
+}
+
 
 if ($tipo == "listar_tokens") {
     $arr_Respuesta = array('status' => false, 'msg' => 'Error_Sesion');
@@ -41,16 +47,17 @@ if ($tipo == "listar_tokens") {
 if ($tipo == "actualizar_token") {
     $arr_Respuesta = array('status' => false, 'msg' => 'Error_Sesion');
     if ($objSesion->verificar_sesion_si_activa($id_sesion, $token)) {
-        $id = $_POST['id'] ?? '';
         $nuevoToken = $_POST['nuevo_token'] ?? '';
-        if ($id && $nuevoToken) {
-            $actualizado = $objToken->actualizarToken($id, $nuevoToken);
+        if ($nuevoToken) {
+            $actualizado = $objToken->actualizarToken($nuevoToken);
             if ($actualizado) {
                 $arr_Respuesta['status'] = true;
                 $arr_Respuesta['mensaje'] = 'Token actualizado correctamente';
             } else {
                 $arr_Respuesta['mensaje'] = 'Error al actualizar el token';
             }
+        } else {
+            $arr_Respuesta['mensaje'] = 'El token no puede estar vacío';
         }
     }
     echo json_encode($arr_Respuesta);
@@ -62,6 +69,7 @@ if ($tipo == "generar_token") {
         $nuevoToken = $objToken->generarNuevoToken();
         $arr_Respuesta['status'] = true;
         $arr_Respuesta['token'] = $nuevoToken;
+        $arr_Respuesta['mensaje'] = 'Token generado correctamente';
     }
     echo json_encode($arr_Respuesta);
 }
