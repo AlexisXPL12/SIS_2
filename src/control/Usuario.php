@@ -147,39 +147,82 @@ if ($tipo == 'validar_datos_reset_password') {
 
 if ($tipo == "listar_usuarios_ordenados_tabla") {
     $arr_Respuesta = array('status' => false, 'msg' => 'Error_Sesion');
+    
     if ($objSesion->verificar_sesion_si_activa($id_sesion, $token)) {
-        //print_r($_POST);
+        // Obtener parámetros
         $pagina = $_POST['pagina'];
         $cantidad_mostrar = $_POST['cantidad_mostrar'];
         $busqueda_tabla_dni = $_POST['busqueda_tabla_dni'];
         $busqueda_tabla_nomap = $_POST['busqueda_tabla_nomap'];
         $busqueda_tabla_estado = $_POST['busqueda_tabla_estado'];
-        //repuesta
+        
+        // Inicializar respuesta
         $arr_Respuesta = array('status' => false, 'contenido' => '');
-        $busqueda_filtro = $objUsuario->buscarUsuariosOrderByApellidosNombres_tabla_filtro($busqueda_tabla_dni, $busqueda_tabla_nomap, $busqueda_tabla_estado);
-        $arr_Usuario = $objUsuario->buscarUsuariosOrderByApellidosNombres_tabla($pagina, $cantidad_mostrar, $busqueda_tabla_dni, $busqueda_tabla_nomap, $busqueda_tabla_estado);
+        
+        // Realizar búsqueda
+        $busqueda_filtro = $objUsuario->buscarUsuariosOrderByApellidosNombres_tabla_filtro(
+            $busqueda_tabla_dni, 
+            $busqueda_tabla_nomap, 
+            $busqueda_tabla_estado
+        );
+        
+        $arr_Usuario = $objUsuario->buscarUsuariosOrderByApellidosNombres_tabla(
+            $pagina, 
+            $cantidad_mostrar, 
+            $busqueda_tabla_dni, 
+            $busqueda_tabla_nomap, 
+            $busqueda_tabla_estado
+        );
+        
         $arr_contenido = [];
+        
         if (!empty($arr_Usuario)) {
-            // recorremos el array para agregar las opciones de las categorias
+            // Recorrer el array para agregar las opciones
             for ($i = 0; $i < count($arr_Usuario); $i++) {
-                // definimos el elemento como objeto
+                // Definir el elemento como objeto
                 $arr_contenido[$i] = (object) [];
-                // agregamos solo la informacion que se desea enviar a la vista
+                
+                // Agregar información
                 $arr_contenido[$i]->id = $arr_Usuario[$i]->id;
                 $arr_contenido[$i]->dni = $arr_Usuario[$i]->dni;
                 $arr_contenido[$i]->nombres_apellidos = $arr_Usuario[$i]->nombres_apellidos;
                 $arr_contenido[$i]->correo = $arr_Usuario[$i]->correo;
                 $arr_contenido[$i]->telefono = $arr_Usuario[$i]->telefono;
                 $arr_contenido[$i]->estado = $arr_Usuario[$i]->estado;
-                $opciones = '<button type="button" title="Editar" class="btn btn-primary waves-effect waves-light" data-toggle="modal" data-target=".modal_editar' . $arr_Usuario[$i]->id . '"><i class="fa fa-edit"></i></button>
-                                <button class="btn btn-info" title="Resetear Contraseña" onclick="reset_password(' . $arr_Usuario[$i]->id . ')"><i class="fa fa-key"></i></button>';
+                
+                // Escapar datos para JavaScript (prevenir XSS)
+                $id = $arr_Usuario[$i]->id;
+                $dni = htmlspecialchars($arr_Usuario[$i]->dni, ENT_QUOTES, 'UTF-8');
+                $nombres = htmlspecialchars($arr_Usuario[$i]->nombres_apellidos, ENT_QUOTES, 'UTF-8');
+                $correo = htmlspecialchars($arr_Usuario[$i]->correo, ENT_QUOTES, 'UTF-8');
+                $telefono = htmlspecialchars($arr_Usuario[$i]->telefono, ENT_QUOTES, 'UTF-8');
+                $estado = $arr_Usuario[$i]->estado;
+                
+                // Generar botones con la nueva función de SweetAlert2
+                $opciones = '
+                    <button type="button" 
+                            title="Editar" 
+                            class="btn btn-warning btn-sm waves-effect waves-light" 
+                            onclick="abrirModalEditarUsuario(' . $id . ', \'' . $dni . '\', \'' . $nombres . '\', \'' . $correo . '\', \'' . $telefono . '\', ' . $estado . ')">
+                        <i class="fa fa-edit"></i>
+                    </button>
+                    <button type="button" 
+                            class="btn btn-info btn-sm waves-effect waves-light" 
+                            title="Resetear Contraseña" 
+                            onclick="reset_password(' . $id . ')">
+                        <i class="fa fa-key"></i>
+                    </button>
+                ';
+                
                 $arr_contenido[$i]->options = $opciones;
             }
+            
             $arr_Respuesta['total'] = count($busqueda_filtro);
             $arr_Respuesta['status'] = true;
             $arr_Respuesta['contenido'] = $arr_contenido;
         }
     }
+    
     echo json_encode($arr_Respuesta);
 }
 if ($tipo == "registrar") {
