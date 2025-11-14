@@ -22,72 +22,108 @@ class TokenModel
         return '';
     }
 
-    // Listar el token (solo hay uno)
+    // Insertar token (con prepared statements para seguridad)
+    public function insertarToken($nuevoToken)
+    {
+        try {
+            // Usar prepared statements
+            $stmt = $this->conexion->prepare("INSERT INTO tokens_api (token) VALUES (?)");
+            
+            if (!$stmt) {
+                error_log("Error preparando statement: " . $this->conexion->error);
+                return false;
+            }
+            
+            $stmt->bind_param("s", $nuevoToken);
+            $resultado = $stmt->execute();
+            
+            if (!$resultado) {
+                error_log("Error ejecutando insert: " . $stmt->error);
+            }
+            
+            $stmt->close();
+            return $resultado;
+            
+        } catch (Exception $e) {
+            error_log("Excepción en insertarToken: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    // Listar todos los tokens (solo hay uno)
     public function listarTodosLosTokens()
     {
         $arrRespuesta = array();
-        $query = "SELECT token FROM tokens_api LIMIT 1";
+        $query = "SELECT id, token FROM tokens_api LIMIT 1";
         $respuesta = $this->conexion->query($query);
-        if ($objeto = $respuesta->fetch_object()) {
+        
+        if ($respuesta && $objeto = $respuesta->fetch_object()) {
             array_push($arrRespuesta, $objeto);
         }
+        
         return $arrRespuesta;
     }
 
-    // Actualizar el token único (alternativa)
-public function actualizarToken($nuevoToken)
-{
-    // Escapar el token para seguridad
-    $nuevoToken = $this->conexion->real_escape_string($nuevoToken);
-    
-    // Verificar si existe algún token
-    $verificar = $this->conexion->query("SELECT id FROM tokens_api LIMIT 1");
-    
-    if ($verificar && $verificar->num_rows > 0) {
-        // Si existe, hacer UPDATE del primer registro
-        $row = $verificar->fetch_object();
-        $query = "UPDATE tokens_api SET token = '$nuevoToken' WHERE id = {$row->id}";
-    } else {
-        // Si no existe ninguno, insertar nuevo
-        $query = "INSERT INTO tokens_api (token) VALUES ('$nuevoToken')";
+    // Actualizar el token (con prepared statements)
+    public function actualizarToken($nuevoToken)
+    {
+        try {
+            // Verificar si existe un token
+            $sql = $this->conexion->query("SELECT id FROM tokens_api LIMIT 1");
+            
+            if ($sql && $sql->num_rows > 0) {
+                // Token existe - actualizar
+                $row = $sql->fetch_object();
+                $id = $row->id;
+                
+                error_log("Actualizando token con ID: $id");
+                
+                $stmt = $this->conexion->prepare("UPDATE tokens_api SET token = ? WHERE id = ?");
+                
+                if (!$stmt) {
+                    error_log("Error preparando UPDATE: " . $this->conexion->error);
+                    return false;
+                }
+                
+                $stmt->bind_param("si", $nuevoToken, $id);
+                $resultado = $stmt->execute();
+                
+                if (!$resultado) {
+                    error_log("Error ejecutando UPDATE: " . $stmt->error);
+                } else {
+                    error_log("Token actualizado exitosamente");
+                }
+                
+                $stmt->close();
+                return $resultado;
+                
+            } else {
+                // No existe token - insertar
+                error_log("No existe token, insertando nuevo");
+                return $this->insertarToken($nuevoToken);
+            }
+            
+        } catch (Exception $e) {
+            error_log("Excepción en actualizarToken: " . $e->getMessage());
+            return false;
+        }
     }
-    
-    $respuesta = $this->conexion->query($query);
-    
-    // Retornar true si fue exitoso, false si hubo error
-    return $respuesta ? true : false;
-}
 
-// Función adicional para obtener el token actual
-public function obtenerTokenActual()
-{
-    $query = "SELECT token FROM tokens_api LIMIT 1";
-    $resultado = $this->conexion->query($query);
-    
-    if ($resultado && $resultado->num_rows > 0) {
-        $row = $resultado->fetch_object();
-        return $row->token;
-    }
-    
-    return null;
-}
-    // Generar un nuevo token
+    // Generar un nuevo token aleatorio
     public function generarNuevoToken()
     {
         $nuevoToken = bin2hex(random_bytes(16)) . '-' . date('Ymd') . '-1';
 
         // Verificar si existe un token
-        $verificar = $this->conexion->query("SELECT token FROM tokens_api LIMIT 1");
-
-        if ($verificar->num_rows > 0) {
+        $verificar = $this->conexion->query("SELECT id FROM tokens_api LIMIT 1");
+        
+        if ($verificar && $verificar->num_rows > 0) {
             // Actualizar token existente
-            $query = "UPDATE tokens_api SET token = '$nuevoToken' LIMIT 1";
+            return $this->actualizarToken($nuevoToken) ? $nuevoToken : false;
         } else {
             // Insertar nuevo token
-            $query = "INSERT INTO tokens_api (token) VALUES ('$nuevoToken')";
+            return $this->insertarToken($nuevoToken) ? $nuevoToken : false;
         }
-
-        $this->conexion->query($query);
-        return $nuevoToken;
     }
 }
+?>

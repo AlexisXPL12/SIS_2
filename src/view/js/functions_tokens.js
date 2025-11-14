@@ -1,4 +1,3 @@
-
 // Función para listar el token
 async function listarTokens() {
     try {
@@ -12,7 +11,15 @@ async function listarTokens() {
             cache: 'no-cache',
             body: formData
         });
-        let json = await respuesta.json();
+
+        const textoRespuesta = await respuesta.text();
+        let json;
+        
+        try {
+            json = JSON.parse(textoRespuesta);
+        } catch (e) {
+            throw new Error('Respuesta inválida del servidor');
+        }
 
         if (json.status && json.contenido.length > 0) {
             let item = json.contenido[0];
@@ -40,7 +47,7 @@ async function listarTokens() {
         } else {
             document.getElementById('tablas').innerHTML = `
                 <div class="alert alert-info">
-                    No hay token configurado. 
+                    No hay token configurado.
                     <button class="btn btn-primary ml-2" onclick="crearPrimerToken()">
                         <i class="fa fa-plus"></i> Crear Token
                     </button>
@@ -48,12 +55,13 @@ async function listarTokens() {
             `;
         }
     } catch (e) {
-        console.log("Error al cargar tokens: " + e);
         Swal.fire({
             icon: 'error',
             title: 'Error',
-            text: 'Error al cargar el token',
-            confirmButtonClass: 'btn btn-confirm mt-2'
+            text: 'Error al cargar el token: ' + e.message,
+            customClass: {
+                confirmButton: 'btn btn-danger mt-2'
+            }
         });
     }
 }
@@ -72,15 +80,15 @@ function abrirModalEditar(tokenActual) {
         showCancelButton: true,
         confirmButtonText: 'Actualizar',
         cancelButtonText: 'Cancelar',
-        confirmButtonClass: 'btn btn-success mt-2',
-        cancelButtonClass: 'btn btn-secondary mt-2',
         customClass: {
-            confirmButton: 'btn btn-success',
-            cancelButton: 'btn btn-secondary'
+            confirmButton: 'btn btn-success mt-2',
+            cancelButton: 'btn btn-secondary mt-2'
         },
         buttonsStyling: false,
+        focusConfirm: false,
         preConfirm: () => {
             const nuevoToken = document.getElementById('swal-input-token').value.trim();
+            
             if (!nuevoToken) {
                 Swal.showValidationMessage('El token no puede estar vacío');
                 return false;
@@ -92,7 +100,10 @@ function abrirModalEditar(tokenActual) {
             return nuevoToken;
         }
     }).then((result) => {
-        if (result.isConfirmed) {
+        // Para versiones antiguas de SweetAlert2, si tiene 'value' significa que se confirmó
+        if (result.value !== undefined && result.value !== null) {
+            actualizarToken(result.value);
+        } else if (result.isConfirmed) {
             actualizarToken(result.value);
         }
     });
@@ -105,19 +116,21 @@ async function actualizarToken(nuevoToken) {
             icon: 'error',
             title: 'Error',
             text: 'El token no puede estar vacío',
-            confirmButtonClass: 'btn btn-confirm mt-2'
+            customClass: {
+                confirmButton: 'btn btn-danger mt-2'
+            }
         });
         return;
     }
 
-    // Mostrar loading
+    // Mostrar loading (compatible con versiones antiguas)
     Swal.fire({
         title: 'Actualizando...',
         text: 'Por favor espere',
         allowOutsideClick: false,
         allowEscapeKey: false,
         showConfirmButton: false,
-        willOpen: () => {
+        onOpen: () => {
             Swal.showLoading();
         }
     });
@@ -134,37 +147,58 @@ async function actualizarToken(nuevoToken) {
             cache: 'no-cache',
             body: formData
         });
-        let json = await respuesta.json();
+
+        const textoRespuesta = await respuesta.text();
+        let json;
+        
+        try {
+            json = JSON.parse(textoRespuesta);
+        } catch (e) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error del Servidor',
+                text: 'La respuesta del servidor no es válida',
+                customClass: {
+                    confirmButton: 'btn btn-danger mt-2'
+                }
+            });
+            return;
+        }
 
         if (json.status) {
             Swal.fire({
                 icon: 'success',
-                title: 'Actualizado',
+                title: '¡Actualizado!',
                 text: json.mensaje || 'Token actualizado correctamente',
-                confirmButtonClass: 'btn btn-success mt-2'
+                customClass: {
+                    confirmButton: 'btn btn-success mt-2'
+                }
             }).then(() => {
-                listarTokens(); // Recargar la tabla
+                listarTokens();
             });
         } else {
             Swal.fire({
                 icon: 'error',
                 title: 'Error',
                 text: json.mensaje || 'Error al actualizar el token',
-                confirmButtonClass: 'btn btn-danger mt-2'
+                customClass: {
+                    confirmButton: 'btn btn-danger mt-2'
+                }
             });
         }
     } catch (e) {
-        console.log("Error al actualizar token: " + e);
         Swal.fire({
             icon: 'error',
             title: 'Error de Conexión',
-            text: 'No se pudo conectar con el servidor. Intente nuevamente.',
-            confirmButtonClass: 'btn btn-danger mt-2'
+            text: 'No se pudo conectar con el servidor',
+            customClass: {
+                confirmButton: 'btn btn-danger mt-2'
+            }
         });
     }
 }
 
-// Función para crear el primer token (solo cuando no existe ninguno)
+// Función para crear primer token
 function crearPrimerToken() {
     Swal.fire({
         title: 'Crear Token API',
@@ -178,11 +212,9 @@ function crearPrimerToken() {
         showCancelButton: true,
         confirmButtonText: 'Crear',
         cancelButtonText: 'Cancelar',
-        confirmButtonClass: 'btn btn-primary mt-2',
-        cancelButtonClass: 'btn btn-secondary mt-2',
         customClass: {
-            confirmButton: 'btn btn-primary',
-            cancelButton: 'btn btn-secondary'
+            confirmButton: 'btn btn-primary mt-2',
+            cancelButton: 'btn btn-secondary mt-2'
         },
         buttonsStyling: false,
         preConfirm: () => {
@@ -199,9 +231,101 @@ function crearPrimerToken() {
         }
     }).then((result) => {
         if (result.isConfirmed) {
-            actualizarToken(result.value);
+            insertarNuevoToken(result.value);
+        } else if (result.value !== undefined && result.value !== null) {
+            // Para versiones antiguas de SweetAlert2
+            insertarNuevoToken(result.value);
         }
     });
+}
+
+// Función para insertar un nuevo token
+async function insertarNuevoToken(nuevoToken) {
+    if (!nuevoToken) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'El token no puede estar vacío',
+            customClass: {
+                confirmButton: 'btn btn-danger mt-2'
+            }
+        });
+        return;
+    }
+
+    // Mostrar loading (compatible con versiones antiguas)
+    Swal.fire({
+        title: 'Creando token...',
+        text: 'Por favor espere',
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        showConfirmButton: false,
+        onOpen: () => {
+            Swal.showLoading();
+        }
+    });
+
+    const formData = new FormData();
+    formData.append('nuevo_token', nuevoToken);
+    formData.append('sesion', session_session);
+    formData.append('token', token_token);
+
+    try {
+        let respuesta = await fetch(base_url_server + 'src/control/Tokens.php?tipo=insertar_token', {
+            method: 'POST',
+            mode: 'cors',
+            cache: 'no-cache',
+            body: formData
+        });
+
+        const textoRespuesta = await respuesta.text();
+        let json;
+        
+        try {
+            json = JSON.parse(textoRespuesta);
+        } catch (e) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error del Servidor',
+                text: 'Respuesta inválida del servidor',
+                customClass: {
+                    confirmButton: 'btn btn-danger mt-2'
+                }
+            });
+            return;
+        }
+
+        if (json.status) {
+            Swal.fire({
+                icon: 'success',
+                title: '¡Token Creado!',
+                text: json.mensaje || 'Token creado correctamente',
+                customClass: {
+                    confirmButton: 'btn btn-success mt-2'
+                }
+            }).then(() => {
+                listarTokens();
+            });
+        } else {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: json.mensaje || 'Error al crear el token',
+                customClass: {
+                    confirmButton: 'btn btn-danger mt-2'
+                }
+            });
+        }
+    } catch (e) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Error de Conexión',
+            text: 'No se pudo conectar con el servidor',
+            customClass: {
+                confirmButton: 'btn btn-danger mt-2'
+            }
+        });
+    }
 }
 
 // Inicializar al cargar la página

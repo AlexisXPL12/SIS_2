@@ -19,8 +19,5 @@
 <div id="modals_editar"></div>
 <!-- Incluir el archivo JS externo -->
 <script src="<?php echo BASE_URL; ?>src/view/js/functions_tokens.js"></script>
-<script>
-    // Llamar a la función para listar tokens al cargar la página
-    listarTokens();
-</script>
 <!-- end page title -->
+
