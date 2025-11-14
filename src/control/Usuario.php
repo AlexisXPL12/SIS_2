@@ -145,84 +145,53 @@ if ($tipo == 'validar_datos_reset_password') {
     echo json_encode($arrRespuesta);
 }
 
-if ($tipo == "listar_usuarios_ordenados_tabla") {
+elseif ($tipo == "listar_clientes_api_ordenados_tabla") {
+    // Log para debugging
+    error_log("=== INICIO listar_clientes_api ===");
+    error_log("Sesion: " . $id_sesion);
+    error_log("Token: " . $token);
+    
     $arr_Respuesta = array('status' => false, 'msg' => 'Error_Sesion');
     
     if ($objSesion->verificar_sesion_si_activa($id_sesion, $token)) {
-        // Obtener parámetros
+        error_log("Sesión válida");
+        
         $pagina = $_POST['pagina'];
         $cantidad_mostrar = $_POST['cantidad_mostrar'];
-        $busqueda_tabla_dni = $_POST['busqueda_tabla_dni'];
-        $busqueda_tabla_nomap = $_POST['busqueda_tabla_nomap'];
+        $busqueda_tabla_ruc = $_POST['busqueda_tabla_ruc'];
+        $busqueda_tabla_razon_social = $_POST['busqueda_tabla_razon_social'];
         $busqueda_tabla_estado = $_POST['busqueda_tabla_estado'];
         
-        // Inicializar respuesta
-        $arr_Respuesta = array('status' => false, 'contenido' => '');
+        error_log("Parámetros recibidos: pagina=$pagina, cantidad=$cantidad_mostrar");
         
-        // Realizar búsqueda
-        $busqueda_filtro = $objUsuario->buscarUsuariosOrderByApellidosNombres_tabla_filtro(
-            $busqueda_tabla_dni, 
-            $busqueda_tabla_nomap, 
-            $busqueda_tabla_estado
-        );
-        
-        $arr_Usuario = $objUsuario->buscarUsuariosOrderByApellidosNombres_tabla(
-            $pagina, 
-            $cantidad_mostrar, 
-            $busqueda_tabla_dni, 
-            $busqueda_tabla_nomap, 
-            $busqueda_tabla_estado
-        );
-        
-        $arr_contenido = [];
-        
-        if (!empty($arr_Usuario)) {
-            // Recorrer el array para agregar las opciones
-            for ($i = 0; $i < count($arr_Usuario); $i++) {
-                // Definir el elemento como objeto
-                $arr_contenido[$i] = (object) [];
-                
-                // Agregar información
-                $arr_contenido[$i]->id = $arr_Usuario[$i]->id;
-                $arr_contenido[$i]->dni = $arr_Usuario[$i]->dni;
-                $arr_contenido[$i]->nombres_apellidos = $arr_Usuario[$i]->nombres_apellidos;
-                $arr_contenido[$i]->correo = $arr_Usuario[$i]->correo;
-                $arr_contenido[$i]->telefono = $arr_Usuario[$i]->telefono;
-                $arr_contenido[$i]->estado = $arr_Usuario[$i]->estado;
-                
-                // Escapar datos para JavaScript (prevenir XSS)
-                $id = $arr_Usuario[$i]->id;
-                $dni = htmlspecialchars($arr_Usuario[$i]->dni, ENT_QUOTES, 'UTF-8');
-                $nombres = htmlspecialchars($arr_Usuario[$i]->nombres_apellidos, ENT_QUOTES, 'UTF-8');
-                $correo = htmlspecialchars($arr_Usuario[$i]->correo, ENT_QUOTES, 'UTF-8');
-                $telefono = htmlspecialchars($arr_Usuario[$i]->telefono, ENT_QUOTES, 'UTF-8');
-                $estado = $arr_Usuario[$i]->estado;
-                
-                // Generar botones con la nueva función de SweetAlert2
-                $opciones = '
-                    <button type="button" 
-                            title="Editar" 
-                            class="btn btn-warning btn-sm waves-effect waves-light" 
-                            onclick="abrirModalEditarUsuario(' . $id . ', \'' . $dni . '\', \'' . $nombres . '\', \'' . $correo . '\', \'' . $telefono . '\', ' . $estado . ')">
-                        <i class="fa fa-edit"></i>
-                    </button>
-                    <button type="button" 
-                            class="btn btn-info btn-sm waves-effect waves-light" 
-                            title="Resetear Contraseña" 
-                            onclick="reset_password(' . $id . ')">
-                        <i class="fa fa-key"></i>
-                    </button>
-                ';
-                
-                $arr_contenido[$i]->options = $opciones;
-            }
+        try {
+            $total = $model->contarClientesConFiltros(
+                $busqueda_tabla_ruc, 
+                $busqueda_tabla_razon_social, 
+                $busqueda_tabla_estado
+            );
             
-            $arr_Respuesta['total'] = count($busqueda_filtro);
-            $arr_Respuesta['status'] = true;
-            $arr_Respuesta['contenido'] = $arr_contenido;
+            error_log("Total encontrados: " . $total);
+            
+            $arr_ClienteApi = $model->buscarClientesConFiltros(
+                $busqueda_tabla_ruc, 
+                $busqueda_tabla_razon_social, 
+                $busqueda_tabla_estado
+            );
+            
+            error_log("Registros obtenidos: " . count($arr_ClienteApi));
+            
+            // ... resto del código
+            
+        } catch (Exception $e) {
+            error_log("Error en consulta: " . $e->getMessage());
+            $arr_Respuesta = array('status' => false, 'msg' => 'Error en consulta: ' . $e->getMessage());
         }
+    } else {
+        error_log("Sesión inválida");
     }
     
+    error_log("Respuesta final: " . json_encode($arr_Respuesta));
     echo json_encode($arr_Respuesta);
 }
 if ($tipo == "registrar") {
